@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String            @unique
+  passwordHash  String
+  avatarColor   String            @default("#2f855a")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  memberships   WorkspaceMember[]
+  assigned      Task[]            @relation("TaskAssignee")
+  created       Task[]            @relation("TaskCreator")
+  comments      Comment[]
+  notifications Notification[]    @relation("NotificationUser")
+  actorOf       Notification[]    @relation("NotificationActor")
+  activities    Activity[]
+  invitesSent   Invite[]
+}
+
+model Workspace {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  color       String            @default("#2f855a")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  memberships WorkspaceMember[]
+  spaces      Space[]
+  invites     Invite[]
+  activities  Activity[]
+}
+
+/// Roles, highest first: OWNER > ADMIN > MEMBER > GUEST
+model WorkspaceMember {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  workspaceId String   @db.ObjectId
+  role        String   @default("MEMBER")
+  createdAt   DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Invite {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  email       String
+  role        String    @default("MEMBER")
+  /// sha256 of the token in the invite link; the raw token is never stored
+  tokenHash   String    @unique
+  status      String    @default("PENDING") // PENDING | ACCEPTED | REVOKED
+  workspaceId String    @db.ObjectId
+  invitedById String    @db.ObjectId
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation(fields: [invitedById], references: [id])
+
+  @@index([workspaceId, status])
+  @@index([email])
+}
+
+model Space {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  color       String        @default("#38a169")
+  icon        String        @default("leaf")
+  workspaceId String        @db.ObjectId
+  createdAt   DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folders     Folder[]
+  lists       ProjectList[]
+
+  @@index([workspaceId])
+}
+
+model Folder {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  spaceId   String        @db.ObjectId
+  createdAt DateTime      @default(now())
+  space     Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  lists     ProjectList[]
+
+  @@index([spaceId])
+}
+
+model ProjectList {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  spaceId   String   @db.ObjectId
+  folderId  String?  @db.ObjectId
+  createdAt DateTime @default(now())
+  space     Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  folder    Folder?  @relation(fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tasks     Task[]
+
+  @@index([spaceId])
+}
+
+model Task {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String    @default("")
+  status       String    @default("TODO") // TODO | IN_PROGRESS | REVIEW | DONE
+  priority     String    @default("NORMAL") // URGENT | HIGH | NORMAL | LOW
+  startDate    DateTime?
+  dueDate      DateTime?
+  timeEstimate Int? // minutes
+  position     Float     @default(0)
+  tags         String[]
+  listId       String    @db.ObjectId
+  parentId     String?   @db.ObjectId
+  assigneeId   String?   @db.ObjectId
+  creatorId    String    @db.ObjectId
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  list     ProjectList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  parent   Task?       @relation("Subtasks", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subtasks Task[]      @relation("Subtasks")
+  assignee User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator  User        @relation("TaskCreator", fields: [creatorId], references: [id])
+  comments Comment[]
+
+  @@index([listId, status])
+  @@index([assigneeId])
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  body      String
+  taskId    String   @db.ObjectId
+  authorId  String   @db.ObjectId
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User     @relation(fields: [authorId], references: [id])
+
+  @@index([taskId])
+}
+
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  actorId     String?  @db.ObjectId
+  workspaceId String?  @db.ObjectId
+  type        String // ASSIGNED | COMMENT | MENTION | INVITE | ROLE | STATUS
+  title       String
+  body        String   @default("")
+  link        String   @default("")
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user  User  @relation("NotificationUser", fields: [userId], references: [id])
+  actor User? @relation("NotificationActor", fields: [actorId], references: [id])
+
+  @@index([userId, read])
+}
+
+model Activity {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  workspaceId String   @db.ObjectId
+  actorId     String   @db.ObjectId
+  action      String // e.g. task.created, member.role_changed
+  target      String // human readable name of what changed
+  detail      String   @default("")
+  link        String   @default("")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User      @relation(fields: [actorId], references: [id])
+
+  @@index([workspaceId, createdAt])
+}
