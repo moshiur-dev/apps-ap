@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "npm install",
-  "buildCommand": "npx prisma generate && npm run build && node -e \"require('fs').mkdirSync('public',{recursive:true})\"",
+  "buildCommand": "npx prisma generate && npm run build",
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {
