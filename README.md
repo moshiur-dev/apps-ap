@@ -69,7 +69,19 @@ Gmail: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, and a 16-character Google **
 | Tasks | `GET/POST /lists/:id/tasks`, `GET /workspaces/:id/tasks`, `GET/PATCH/DELETE /tasks/:id`, `POST /tasks/:id/comments` |
 | Inbox & log | `GET /notifications`, `POST /notifications/read-all`, `POST /notifications/:id/read`, `GET /workspaces/:id/activity` |
 
-## Deploying
-Host on a Node platform (Render, Railway, Fly.io…). Run `npm run build` then
-`npm run start:prod`. Set the variables above, set `WEB_ORIGIN`/`WEB_URL` to your
-frontend URL, and allow the host's IP in Atlas **Network Access**.
+## Deploying to Vercel
+The repo is ready for Vercel: `vercel.json` builds the app and `api/index.js` runs it as
+a serverless function. Every path, such as `/api/auth/login`, goes to that function.
+
+1. Import the repo in Vercel. Leave Framework / Build / Output settings as they are, because `vercel.json` sets them.
+2. **Settings → Environment Variables:** add `DATABASE_URL`, `JWT_SECRET`,
+   `WEB_ORIGIN` and `WEB_URL` (your frontend URL, e.g. `https://apps-web-mocha.vercel.app`),
+   plus the SMTP variables if you want invite emails. Then **redeploy**.
+3. **MongoDB Atlas → Network Access:** add `0.0.0.0/0`, because Vercel has no fixed IP addresses.
+   Use a strong database password.
+4. Check `https://<your-api>.vercel.app/api/health/db`.
+
+If a variable is missing, the API answers with a 500 that names it, e.g.
+`API failed to start: JWT_SECRET is missing…`.
+
+Other Node hosts (Render, Railway…): `npm run build` then `npm run start:prod`.
