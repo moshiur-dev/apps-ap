@@ -6,7 +6,15 @@ export function configureApp(app: INestApplication) {
   app.enableCors({
     origin: (process.env.WEB_ORIGIN ?? 'http://localhost:3000')
       .split(',')
-      .map((o) => o.trim().replace(/\/$/, '')),
+      // Tolerate values pasted from .env with quotes, spaces or a trailing slash
+      .map((o) =>
+        o
+          .trim()
+          .replace(/^["']|["']$/g, '')
+          .trim()
+          .replace(/\/$/, ''),
+      )
+      .filter(Boolean),
   });
   app.useGlobalPipes(
     new ValidationPipe({
