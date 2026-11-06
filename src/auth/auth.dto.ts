@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -13,6 +13,12 @@ export class RegisterDto {
   @MinLength(8)
   @MaxLength(100)
   password: string;
+
+  /** Set when signing up from an invite link. The invite proves the address, so no second email is needed. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  inviteToken?: string;
 }
 
 export class LoginDto {
@@ -21,4 +27,16 @@ export class LoginDto {
 
   @IsString()
   password: string;
+}
+
+export class VerifyDto {
+  @IsString()
+  @MinLength(20)
+  @MaxLength(200)
+  token: string;
+}
+
+export class ResendDto {
+  @IsEmail()
+  email: string;
 }

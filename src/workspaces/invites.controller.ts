@@ -255,6 +255,13 @@ export class InvitesController {
       where: { id: invite.id },
       data: { status: 'ACCEPTED', acceptedAt: new Date() },
     });
+    // Opening the link from their inbox proves the address is theirs
+    if (!me.emailVerifiedAt) {
+      await this.prisma.user.update({
+        where: { id: user.sub },
+        data: { emailVerifiedAt: new Date() },
+      });
+    }
     await this.events.log(
       invite.workspaceId,
       user.sub,

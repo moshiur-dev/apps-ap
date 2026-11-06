@@ -85,3 +85,13 @@ If a variable is missing, the API answers with a 500 that names it, e.g.
 `API failed to start: JWT_SECRET is missing…`.
 
 Other Node hosts (Render, Railway…): `npm run build` then `npm run start:prod`.
+
+## Email verification & time tracking (this release)
+
+- **Sign-up now needs email confirmation.** Registration returns `{ verificationRequired: true }` and sends a link to `WEB_URL/verify?token=…` (valid 24 h). Login is refused until the address is confirmed. Invite sign-ups skip this step because the invite email already proves the address.
+- **Existing accounts:** run once in the Mongo shell so people already using Canopy aren't locked out:
+  `db.User.updateMany({ emailVerifiedAt: { $exists: false } }, { $set: { emailVerifiedAt: new Date() } })`
+- Without `SMTP_*` set, non-production responses include a `verifyLink` so you can test locally.
+- After pulling, run `npx prisma generate && npx prisma db push`.
+- **Time tracking:** `POST /api/tasks/:id/time/start`, `POST /api/tasks/:id/time/stop`, `POST /api/tasks/:id/time` (manual minutes), `GET /api/tasks/:id/time`, `DELETE /api/time/:entryId`, `GET /api/time/running`. One running timer per user; starting a new one stops the old one.
+- **Statuses:** `TODO`, `IN_PROGRESS`, `REVIEW` (In Review), `SECOND_EYE` (Review of second eye), `DONE` (Completed). Defined once in `src/tasks/tasks.dto.ts`.

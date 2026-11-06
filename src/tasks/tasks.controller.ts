@@ -31,8 +31,9 @@ const taskInclude = {
 const STATUS_LABEL: Record<string, string> = {
   TODO: 'To Do',
   IN_PROGRESS: 'In Progress',
-  REVIEW: 'Review',
-  DONE: 'Complete',
+  REVIEW: 'In Review',
+  SECOND_EYE: 'Review of second eye',
+  DONE: 'Completed',
 };
 
 const toDate = (v: string | null | undefined) =>
