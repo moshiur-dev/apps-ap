@@ -14,7 +14,14 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-export const STATUSES = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const;
+/** Every status a task can have. Add new ones here and in web/src/components/ui.tsx. */
+export const STATUSES = [
+  'TODO',
+  'IN_PROGRESS',
+  'REVIEW',
+  'SECOND_EYE',
+  'DONE',
+] as const;
 export const PRIORITIES = ['URGENT', 'HIGH', 'NORMAL', 'LOW'] as const;
 
 class TaskFields {

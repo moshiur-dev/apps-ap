@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { EventsModule } from './events/events.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { TasksModule } from './tasks/tasks.module';
+import { TimeModule } from './time/time.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     AuthModule,
     WorkspacesModule,
     TasksModule,
+    TimeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -12,6 +12,11 @@ model User {
   name          String
   email         String            @unique
   passwordHash  String
+  /// null until the user clicks the link in the verification email (or accepts an invite)
+  emailVerifiedAt DateTime?
+  /// sha256 of the one-time verification token; the raw token is only emailed
+  verifyTokenHash String? @unique
+  verifyExpiresAt DateTime?
   avatarColor   String            @default("#2f855a")
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
@@ -23,6 +28,7 @@ model User {
   actorOf       Notification[]    @relation("NotificationActor")
   activities    Activity[]
   invitesSent   Invite[]
+  timeEntries   TimeEntry[]
 }
 
 model Workspace {
@@ -114,7 +120,7 @@ model Task {
   id           String    @id @default(auto()) @map("_id") @db.ObjectId
   title        String
   description  String    @default("")
-  status       String    @default("TODO") // TODO | IN_PROGRESS | REVIEW | DONE
+  status       String    @default("TODO") // see STATUSES in tasks.dto.ts
   priority     String    @default("NORMAL") // URGENT | HIGH | NORMAL | LOW
   startDate    DateTime?
   dueDate      DateTime?
@@ -134,9 +140,29 @@ model Task {
   assignee User?       @relation("TaskAssignee", fields: [assigneeId], references: [id])
   creator  User        @relation("TaskCreator", fields: [creatorId], references: [id])
   comments Comment[]
+  timeEntries TimeEntry[]
 
   @@index([listId, status])
   @@index([assigneeId])
+}
+
+/// A block of tracked time. A running timer has endedAt = null.
+model TimeEntry {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  taskId      String    @db.ObjectId
+  userId      String    @db.ObjectId
+  startedAt   DateTime
+  endedAt     DateTime?
+  /// Seconds. Set when the timer stops, or directly for manual entries.
+  durationSec Int       @default(0)
+  note        String    @default("")
+  createdAt   DateTime  @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([taskId])
+  @@index([userId, endedAt])
 }
 
 model Comment {
